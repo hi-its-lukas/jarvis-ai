@@ -159,7 +159,7 @@ def _extract_brightness_pct(text: str) -> int | None:
 
 
 def _extract_temperature(text: str) -> float | None:
-    numbers = re.findall(r"(\d{1,2}(?:\.\d)?)", text)
+    numbers = re.findall(r"(\d{1,2}(?:[\.,]\d)?)", text)
     for num in numbers:
         value = float(num.replace(",", "."))
         if 5 <= value <= 35:
