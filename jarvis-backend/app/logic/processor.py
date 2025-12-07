@@ -64,7 +64,7 @@ class Processor:
         if not tool:
             return None
 
-        matches = self._discovery.search(text, limit=1, domains=(domain,))
+        matches = await self._discovery.search(text, limit=1, domains=(domain,))
         if not matches:
             return None
         entity = matches[0]
@@ -145,8 +145,9 @@ class Processor:
 
 
 def _contains_keyword(text: str, keywords: set[str]) -> bool:
-    lowered = text.lower()
-    return any(keyword in lowered for keyword in keywords)
+    normalized = re.sub(r"[^\wäöüß]+", " ", text.lower())
+    wrapped = f" {normalized} "
+    return any(f" {keyword} " in wrapped for keyword in keywords)
 
 
 def _extract_brightness_pct(text: str) -> int | None:
