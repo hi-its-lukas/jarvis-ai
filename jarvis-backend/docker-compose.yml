@@ -1,0 +1,60 @@
+version: "3.9"
+
+services:
+  jarvis-backend:
+    build: .
+    restart: unless-stopped
+    env_file: .env
+    depends_on:
+      - wyoming-whisper
+      - wyoming-piper
+      - wyoming-openwakeword
+    ports:
+      - "8000:8000"
+    networks:
+      - jarvis
+
+  wyoming-whisper:
+    image: ghcr.io/home-assistant/wyoming-whisper:latest
+    restart: unless-stopped
+    environment:
+      - MODEL=small-int8
+    ports:
+      - "10300:10300"
+    volumes:
+      - whisper-data:/data
+    networks:
+      - jarvis
+
+  wyoming-piper:
+    image: ghcr.io/home-assistant/wyoming-piper:latest
+    restart: unless-stopped
+    environment:
+      - VOICE=de_DE-thorsten-low
+    ports:
+      - "10200:10200"
+    volumes:
+      - piper-data:/data
+    networks:
+      - jarvis
+
+  wyoming-openwakeword:
+    image: ghcr.io/home-assistant/wyoming-openwakeword:latest
+    restart: unless-stopped
+    environment:
+      - MODEL=openwakeword
+    ports:
+      - "10400:10400"
+    volumes:
+      - openwakeword-data:/data
+    networks:
+      - jarvis
+
+networks:
+  jarvis:
+    driver: bridge
+
+volumes:
+  whisper-data:
+  piper-data:
+  openwakeword-data:
