@@ -85,6 +85,13 @@ TOOL_DEFINITIONS: dict[str, ToolDefinition] = {
             allowed_args=("entity_id", "temperature"),
             required_args=("entity_id", "temperature"),
         ),
+        ToolDefinition(
+            name="ha_climate_turn_off",
+            description="Turn off a climate device.",
+            domain="climate",
+            service="turn_off",
+            allowed_args=("entity_id",),
+        ),
     )
 }
 
@@ -93,7 +100,7 @@ _INTENT_TOOL_MAPPING: dict[str, tuple[str, str]] = {
     "switch_control": ("ha_switch_turn_on", "ha_switch_turn_off"),
     "media_control": ("ha_media_play", "ha_media_pause"),
     "cover_control": ("ha_cover_open", "ha_cover_close"),
-    "climate_control": ("ha_climate_set_temperature", "ha_climate_set_temperature"),
+    "climate_control": ("ha_climate_set_temperature", "ha_climate_turn_off"),
 }
 
 

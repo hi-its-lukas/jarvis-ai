@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 from dataclasses import dataclass
 from time import monotonic
 from typing import Any, Sequence
@@ -79,7 +80,7 @@ class DiscoveryService:
     def last_refresh_age(self) -> float:
         return max(0.0, monotonic() - self._last_refresh)
 
-    def search(
+    async def search(
         self,
         query: str,
         *,
@@ -91,6 +92,17 @@ class DiscoveryService:
         if not query or not self._entities:
             return []
 
+        loop = asyncio.get_running_loop()
+        return await loop.run_in_executor(
+            None, self._search_sync, query, limit, domains
+        )
+
+    def _search_sync(
+        self,
+        query: str,
+        limit: int,
+        domains: Sequence[str] | None = None,
+    ) -> list[EntityRecord]:
         if domains:
             domain_set = {domain.lower() for domain in domains}
             records = [
