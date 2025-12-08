@@ -1,3 +1,5 @@
+version: "3.9"
+
 services:
 
   # ------------------------
@@ -12,14 +14,16 @@ services:
     env_file:
       - .env
     depends_on:
-      - whisper
-      - piper
-      - openwakeword
+      - wyoming-whisper
+      - wyoming-piper
+      - wyoming-openwakeword
+    networks:
+      - jarvis
 
   # ------------------------
   # WHISPER STT
   # ------------------------
-  whisper:
+  wyoming-whisper:
     image: rhasspy/wyoming-whisper:latest
     container_name: wyoming-whisper
     ports:
@@ -29,11 +33,13 @@ services:
       --language de
       --uri tcp://0.0.0.0:10300
     restart: unless-stopped
+    networks:
+      - jarvis
 
   # ------------------------
   # PIPER TTS
   # ------------------------
-  piper:
+  wyoming-piper:
     image: rhasspy/wyoming-piper:latest
     container_name: wyoming-piper
     ports:
@@ -42,11 +48,13 @@ services:
       --voice de_DE-thorsten-low
       --uri tcp://0.0.0.0:10200
     restart: unless-stopped
+    networks:
+      - jarvis
 
   # ------------------------
   # OPENWAKEWORD
   # ------------------------
-  openwakeword:
+  wyoming-openwakeword:
     image: rhasspy/wyoming-openwakeword:latest
     container_name: wyoming-openwakeword
     ports:
@@ -54,3 +62,13 @@ services:
     command: >
       --uri tcp://0.0.0.0:10400
     restart: unless-stopped
+    networks:
+      - jarvis
+
+# ------------------------
+# NETWORKS
+# ------------------------
+networks:
+  jarvis:
+    driver: bridge
+
