@@ -54,3 +54,4 @@ services:
     command: >
       --uri tcp://0.0.0.0:10400
     restart: unless-stopped
+
