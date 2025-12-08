@@ -19,8 +19,12 @@ class Settings(BaseModel):
     ha_token: str
     ollama_url: AnyHttpUrl = "http://127.0.0.1:11434"
     ollama_model: str = "llama3.1"
+    ollama_model_fast: str = "fixt/home-3b-v3"
+    ollama_model_smart: str = "hermes3:8b"
     ha_timeout_seconds: int = 10
     llm_timeout_seconds: int = 60
+    llm_timeout_fast_seconds: int = 25
+    llm_timeout_smart_seconds: int = 60
     discovery_refresh_seconds: int = 300
     cache_max_entities: int = 200
 
@@ -40,8 +44,16 @@ def get_settings() -> Settings:
         "ha_token": os.getenv("HA_TOKEN", ""),
         "ollama_url": os.getenv("OLLAMA_URL", "http://127.0.0.1:11434"),
         "ollama_model": os.getenv("OLLAMA_MODEL", "llama3.1"),
+        "ollama_model_fast": os.getenv("OLLAMA_MODEL_FAST", "fixt/home-3b-v3"),
+        "ollama_model_smart": os.getenv("OLLAMA_MODEL_SMART", "hermes3:8b"),
         "ha_timeout_seconds": int(os.getenv("HA_TIMEOUT_SECONDS", "10")),
         "llm_timeout_seconds": int(os.getenv("LLM_TIMEOUT_SECONDS", "60")),
+        "llm_timeout_fast_seconds": int(
+            os.getenv("LLM_TIMEOUT_FAST_SECONDS", "25")
+        ),
+        "llm_timeout_smart_seconds": int(
+            os.getenv("LLM_TIMEOUT_SMART_SECONDS", "60")
+        ),
         "discovery_refresh_seconds": int(
             os.getenv("DISCOVERY_REFRESH_SECONDS", "300")
         ),
