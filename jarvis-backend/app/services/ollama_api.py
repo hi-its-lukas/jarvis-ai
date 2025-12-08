@@ -7,18 +7,22 @@ from typing import Any
 
 import httpx
 
+from app.core.config import get_settings
+
+settings = get_settings()
+
 
 class OllamaAPI:
     def __init__(
         self,
         base_url: str,
-        model: str,
+        model: str | None = None,
         *,
-        timeout_seconds: int = 60,
+        timeout_seconds: int | None = None,
     ) -> None:
         self._base_url = base_url.rstrip("/")
-        self._model = model
-        self._timeout = timeout_seconds
+        self._default_model = model
+        self._default_timeout = timeout_seconds
 
     async def ask_ollama(
         self,
@@ -26,11 +30,27 @@ class OllamaAPI:
         prompt: str,
         system_instruction: str,
         temperature: float = 0.1,
+        use_smart_model: bool = False,
     ) -> dict[str, Any]:
         """Send a structured prompt to Ollama using JSON mode."""
 
+        if use_smart_model:
+            model = settings.ollama_model_smart or self._default_model
+            timeout = settings.llm_timeout_smart_seconds or self._default_timeout
+        else:
+            model = settings.ollama_model_fast or self._default_model
+            timeout = settings.llm_timeout_fast_seconds or self._default_timeout
+
+        if not model:
+            raise RuntimeError("No Ollama model configured")
+
+        if not timeout:
+            timeout = settings.llm_timeout_seconds
+
+        print(f"[LLM] Using model: {model}")
+
         payload = {
-            "model": self._model,
+            "model": model,
             "format": "json",
             "stream": False,
             "options": {"temperature": temperature},
@@ -41,7 +61,7 @@ class OllamaAPI:
         }
         url = f"{self._base_url}/api/chat"
         try:
-            async with httpx.AsyncClient(timeout=self._timeout) as client:
+            async with httpx.AsyncClient(timeout=timeout) as client:
                 response = await client.post(url, json=payload)
                 response.raise_for_status()
         except httpx.TimeoutException as exc:
