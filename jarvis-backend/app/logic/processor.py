@@ -29,6 +29,23 @@ _NEGATION_KEYWORDS = {
     "halt",
 }
 _BRIGHTNESS_PATTERN = re.compile(r"(\d{1,3})\s*%")
+_SIMPLE_COMMAND_KEYWORDS = {
+    "schalte",
+    "öffne",
+    "schließe",
+    "schliesse",
+    "dimme",
+    "setze",
+    "stelle",
+}
+_SIMPLE_COMMAND_DOMAINS = {
+    "light",
+    "cover",
+    "media",
+    "climate",
+    "scene",
+    "vacuum",
+}
 
 
 class Processor:
@@ -51,7 +68,7 @@ class Processor:
             direct_result = await self._handle_direct_path(text, route.intent, route.domain)
             if direct_result is not None:
                 return direct_result
-        return await self._handle_llm_path(text)
+        return await self._handle_llm_path(text, route.domain if route else None)
 
     async def _handle_direct_path(
         self,
@@ -103,7 +120,7 @@ class Processor:
             "result": result,
         }
 
-    async def _handle_llm_path(self, text: str) -> dict[str, Any]:
+    async def _handle_llm_path(self, text: str, route: str | None = None) -> dict[str, Any]:
         context_entities = self._discovery.get_context_entities(limit=5)
         context_block = self._context.as_prompt_block()
         system_instruction = (
@@ -119,9 +136,11 @@ class Processor:
             f"{context_block}"
         )
 
+        use_smart = not is_simple_command(text, route)
         llm_response = await self._ollama.ask_ollama(
             prompt=user_prompt,
             system_instruction=system_instruction,
+            use_smart_model=use_smart,
         )
         tool_name = llm_response.get("tool_name") or ""
         arguments = llm_response.get("arguments") or {}
@@ -148,6 +167,21 @@ def _contains_keyword(text: str, keywords: set[str]) -> bool:
     normalized = re.sub(r"[^\wäöüß]+", " ", text.lower())
     wrapped = f" {normalized} "
     return any(f" {keyword} " in wrapped for keyword in keywords)
+
+
+def is_simple_command(text: str, route: str | None) -> bool:
+    normalized = text.lower()
+
+    if "?" in text:
+        return False
+
+    if len(text.strip()) >= 80:
+        return False
+
+    if route and route.lower() not in _SIMPLE_COMMAND_DOMAINS:
+        return False
+
+    return any(keyword in normalized for keyword in _SIMPLE_COMMAND_KEYWORDS)
 
 
 def _extract_brightness_pct(text: str) -> int | None:
