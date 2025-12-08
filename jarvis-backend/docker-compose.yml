@@ -12,9 +12,15 @@ services:
     env_file:
       - .env
     depends_on:
-      - whisper
-      - piper
-      - openwakeword
+    # codex/review-dual-llm-implementation-in-repository-wk24wc
+      - wyoming-whisper
+      - wyoming-piper
+      - wyoming-openwakeword
+    ports:
+      - "9000:8000"
+    networks:
+      - jarvis
+    main
 
   # ------------------------
   # WHISPER STT
