@@ -49,6 +49,8 @@ def _build_app() -> FastAPI:
 
         refresh_task = asyncio.create_task(_discovery_refresh_loop())
         app.state.processor = processor
+        app.state.discovery = discovery
+        app.state.ollama = ollama
         try:
             yield
         finally:
