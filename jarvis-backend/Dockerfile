@@ -6,6 +6,7 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 WORKDIR /app
 
 RUN pip install --upgrade pip
+RUN pip install --no-cache-dir python-multipart
 COPY requirements.txt ./
 RUN pip install --no-cache-dir -r requirements.txt
 
