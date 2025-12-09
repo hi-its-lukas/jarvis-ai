@@ -89,13 +89,9 @@ async def list_models() -> Dict[str, Any]:
 
 
 @router.post("/v1/audio/transcriptions")
-async def audio_transcriptions(
-    file: UploadFile = File(...), model: str = "whisper-1"
-) -> Dict[str, str]:
+async def transcribe_audio(file: UploadFile = File(...)) -> Dict[str, str]:
     if not file:
         raise HTTPException(status_code=400, detail=_error_response("No file provided"))
-    if not model:
-        raise HTTPException(status_code=400, detail=_error_response("Model is required"))
 
     content = await file.read()
     placeholder = (
