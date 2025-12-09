@@ -20,7 +20,14 @@ class OllamaAPI:
         *,
         timeout_seconds: int | None = None,
     ) -> None:
-        self._base_url = base_url.rstrip("/")
+        base_url_str = ""
+        if base_url:
+            try:
+                base_url_str = str(base_url).rstrip("/")
+            except Exception:
+                base_url_str = ""
+
+        self._base_url = base_url_str
         self._default_model = model
         self._default_timeout = timeout_seconds
 

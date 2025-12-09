@@ -9,13 +9,14 @@ from typing import Any, Sequence
 
 from rapidfuzz import fuzz, process
 
+from app.logic.device_classifier import DeviceClassifier, DeviceDomain, default_classifier
 from .ha_api import HomeAssistantAPI
 
 IGNORED_DOMAINS = {
-    "device_tracker",
+    DeviceDomain.DEVICE_TRACKER.value,
+    DeviceDomain.BINARY_SENSOR.value,
+    DeviceDomain.SENSOR.value,
     "person",
-    "binary_sensor",
-    "sensor",
     "zone",
     "sun",
 }
@@ -42,12 +43,14 @@ class DiscoveryService:
         *,
         cache_max_entities: int = 200,
         min_score: int = 65,
+        classifier: DeviceClassifier | None = None,
     ) -> None:
         self._ha_api = ha_api
         self._cache_max_entities = cache_max_entities
         self._min_score = min_score
         self._entities: list[EntityRecord] = []
         self._last_refresh = 0.0
+        self._classifier = classifier or default_classifier()
 
     async def refresh(self) -> None:
         """Fetch latest entity states and cache in memory."""
@@ -58,10 +61,10 @@ class DiscoveryService:
             entity_id = state.get("entity_id")
             if not entity_id:
                 continue
-            domain = entity_id.split(".", maxsplit=1)[0]
+            attributes = state.get("attributes") or {}
+            domain = self._classifier.classify(entity_id, attributes)
             if domain in IGNORED_DOMAINS:
                 continue
-            attributes = state.get("attributes") or {}
             name = attributes.get("friendly_name") or entity_id
             record = EntityRecord(
                 entity_id=entity_id,
