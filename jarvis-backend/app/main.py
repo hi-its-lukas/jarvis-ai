@@ -9,7 +9,7 @@ from typing import AsyncGenerator
 
 from fastapi import FastAPI
 
-from app.api import routes
+from app.api import openai_api, routes
 from app.core.config import get_settings
 from app.logic.context import ConversationContext
 from app.logic.processor import Processor
@@ -58,6 +58,7 @@ def _build_app() -> FastAPI:
 
     app = FastAPI(title=settings.app_name, version="1.0.0", lifespan=lifespan)
     app.include_router(routes.router, prefix="/api")
+    app.include_router(openai_api.router)
     return app
 
 
