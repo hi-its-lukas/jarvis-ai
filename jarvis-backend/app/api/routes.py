@@ -46,3 +46,15 @@ async def process_text(
         "entity_id": result.get("entity_id"),
         "result": result.get("result"),
     }
+
+
+@router.post("/discovery/refresh")
+async def refresh_discovery_cache(request: Request) -> dict:
+    discovery = getattr(request.app.state, "discovery", None)
+    if not discovery:
+        raise HTTPException(
+            status_code=503, detail="Discovery service not initialized"
+        )
+
+    await discovery.refresh()
+    return {"status": "ok", "message": "Entity cache refreshed"}

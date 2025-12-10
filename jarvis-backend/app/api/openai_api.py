@@ -8,19 +8,36 @@ import base64
 import time
 import uuid
 
-from fastapi import APIRouter, File, HTTPException, Request, Response, UploadFile
+from fastapi import APIRouter, Depends, File, HTTPException, Request, Response, UploadFile
+from fastapi import status
+from fastapi import Security
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from pydantic import BaseModel, Field
 
 from app.services.function_registry import FUNCTION_DEFINITIONS
 from app.services.openai_engine import OpenAICompatibleEngine
+from app.core.config import get_settings
 
 
-router = APIRouter()
+security = HTTPBearer()
 
 
 FILE_STORE: Dict[str, Dict[str, Any]] = {}
 ASSISTANT_STORE: Dict[str, Dict[str, Any]] = {}
 FINE_TUNE_JOBS: Dict[str, Dict[str, Any]] = {}
+
+
+def verify_token(credentials: HTTPAuthorizationCredentials = Security(security)):
+    settings = get_settings()
+    if credentials.credentials != settings.jarvis_api_token:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid authentication token",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+
+router = APIRouter(dependencies=[Depends(verify_token)])
 
 
 def _error_response(message: str, *, code: int = 400) -> Dict[str, Any]:
