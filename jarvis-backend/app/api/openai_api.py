@@ -185,8 +185,11 @@ def _build_response_output_from_completion(completion: Dict[str, Any]) -> Respon
             )
         )
 
+    completion_id = completion.get("id", f"resp-{uuid.uuid4()}")
+    completion_id = completion_id.replace("chatcmpl-", "resp-", 1).replace("cmpl-", "resp-", 1)
+
     return ResponseObject(
-        id=completion.get("id", f"resp-{uuid.uuid4()}").replace("cmpl-", "resp-", 1),
+        id=completion_id,
         model=completion.get("model"),
         created=completion.get("created"),
         output=output_blocks,
@@ -248,7 +251,31 @@ async def chat_completions(request: Request, payload: ChatCompletionRequest) -> 
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=_error_response(str(exc))) from exc
 
-    return response
+    return _build_chat_completion_response(response, fallback_model=payload.model)
+
+
+@router.post("/v1/completions")
+async def text_completions(request: Request, payload: Dict[str, Any]) -> Any:
+    prompt = payload.get("prompt")
+    model = payload.get("model")
+    if prompt is None:
+        raise HTTPException(status_code=400, detail=_error_response("Prompt is required"))
+
+    messages = [{"role": "user", "content": _normalize_content(prompt)}]
+    engine = _get_engine(request)
+
+    try:
+        completion = await engine.generate_chat_completion(
+            messages=messages,
+            functions=FUNCTION_DEFINITIONS,
+            function_call="auto",
+            entities=[],
+            model=model,
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=_error_response(str(exc))) from exc
+
+    return _build_chat_completion_response(completion, fallback_model=model)
 
 
 @router.post("/v1/completions")
