@@ -27,6 +27,12 @@ class Settings(BaseModel):
     llm_timeout_smart_seconds: int = 60
     discovery_refresh_seconds: int = 300
     cache_max_entities: int = 200
+    llm_system_prompt: str = (
+        "You convert German or English smart home requests into Home Assistant tool calls.\n"
+        "Always respond with JSON: {\"tool_name\": string, \"arguments\": object}.\n"
+        "Never explain yourself. Only return the JSON object."
+    )
+    jarvis_api_token: str = "sk-jarvis-local"
 
     class Config:
         extra = "ignore"
@@ -58,6 +64,13 @@ def get_settings() -> Settings:
             os.getenv("DISCOVERY_REFRESH_SECONDS", "300")
         ),
         "cache_max_entities": int(os.getenv("CACHE_MAX_ENTITIES", "200")),
+        "llm_system_prompt": os.getenv("LLM_SYSTEM_PROMPT")
+        or (
+            "You convert German or English smart home requests into Home Assistant tool calls.\n"
+            "Always respond with JSON: {\"tool_name\": string, \"arguments\": object}.\n"
+            "Never explain yourself. Only return the JSON object."
+        ),
+        "jarvis_api_token": os.getenv("JARVIS_API_TOKEN", "sk-jarvis-local"),
     }
 
     if not data["ha_token"]:

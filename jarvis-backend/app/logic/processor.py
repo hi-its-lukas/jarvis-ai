@@ -5,6 +5,7 @@ from __future__ import annotations
 import re
 from typing import Any
 
+from app.core.config import get_settings
 from app.core.security import SanitizationError
 from app.logic.context import ConversationContext
 from app.logic.device_classifier import classify_entity
@@ -123,10 +124,9 @@ class Processor:
     async def _handle_llm_path(self, text: str, route: str | None = None) -> dict[str, Any]:
         context_entities = self._discovery.get_context_entities(limit=5)
         context_block = self._context.as_prompt_block()
+        settings = get_settings()
         system_instruction = (
-            "You convert German or English smart home requests into Home Assistant tool calls.\n"
-            "Always respond with JSON: {\"tool_name\": string, \"arguments\": object}.\n"
-            "Never explain yourself. Only return the JSON object.\n"
+            f"{settings.llm_system_prompt}\n"
             "Available tools:\n"
             f"{tool_registry.describe_tools_for_prompt()}"
         )
