@@ -24,11 +24,13 @@ ASSISTANT_STORE: Dict[str, Dict[str, Any]] = {}
 FINE_TUNE_JOBS: Dict[str, Dict[str, Any]] = {}
 
 
-def _error_response(message: str, *, error_type: str = "invalid_request_error") -> Dict[str, Any]:
+def _error_response(message: str, *, code: int = 400) -> Dict[str, Any]:
     return {
         "error": {
             "message": message,
-            "type": error_type,
+            "type": "invalid_request_error",
+            "param": None,
+            "code": code,
         }
     }
 
@@ -194,59 +196,6 @@ def _build_response_output_from_completion(completion: Dict[str, Any]) -> Respon
     )
 
 
-def _build_chat_completion_response(completion: Dict[str, Any], *, fallback_model: Optional[str]) -> Dict[str, Any]:
-    """Ensure chat completions always match OpenAI's schema."""
-
-    raw_id = completion.get("id") or f"chatcmpl-{uuid.uuid4()}"
-    if raw_id.startswith("cmpl-"):
-        raw_id = f"chatcmpl-{raw_id.split('cmpl-', 1)[-1]}"
-
-    created = completion.get("created") or int(time.time())
-    model = completion.get("model") or fallback_model or "jarvis"
-
-    normalized_choices: List[Dict[str, Any]] = []
-    for index, choice in enumerate(completion.get("choices") or []):
-        message = choice.get("message") or {}
-        role = message.get("role") or "assistant"
-        content = _normalize_content(message.get("content"))
-        function_call = message.get("function_call")
-
-        normalized_message: Dict[str, Any] = {
-            "role": role,
-            "content": content,
-        }
-        if function_call:
-            normalized_message["function_call"] = function_call
-            if not content:
-                normalized_message["content"] = ""
-
-        normalized_choices.append(
-            {
-                "index": choice.get("index", index),
-                "message": normalized_message,
-                "finish_reason": choice.get("finish_reason")
-                or ("function_call" if function_call else "stop"),
-            }
-        )
-
-    if not normalized_choices:
-        normalized_choices.append(
-            {
-                "index": 0,
-                "message": {"role": "assistant", "content": ""},
-                "finish_reason": "stop",
-            }
-        )
-
-    return {
-        "id": raw_id,
-        "object": "chat.completion",
-        "created": created,
-        "model": model,
-        "choices": normalized_choices,
-    }
-
-
 def _fake_embedding_vector(text: str, length: int = 8) -> List[float]:
     if not text:
         return [0.0 for _ in range(length)]
@@ -327,6 +276,30 @@ async def text_completions(request: Request, payload: Dict[str, Any]) -> Any:
         raise HTTPException(status_code=400, detail=_error_response(str(exc))) from exc
 
     return _build_chat_completion_response(completion, fallback_model=model)
+
+
+@router.post("/v1/completions")
+async def text_completions(request: Request, payload: Dict[str, Any]) -> Any:
+    prompt = payload.get("prompt")
+    model = payload.get("model")
+    if prompt is None:
+        raise HTTPException(status_code=400, detail=_error_response("Prompt is required"))
+
+    messages = [{"role": "user", "content": _normalize_content(prompt)}]
+    engine = _get_engine(request)
+
+    try:
+        completion = await engine.generate_chat_completion(
+            messages=messages,
+            functions=FUNCTION_DEFINITIONS,
+            function_call="auto",
+            entities=[],
+            model=model,
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=_error_response(str(exc))) from exc
+
+    return completion
 
 
 @router.post("/v1/responses")
@@ -473,7 +446,7 @@ async def upload_file(file: UploadFile = File(...), purpose: str = "assistants")
 async def retrieve_file(file_id: str) -> Any:
     record = FILE_STORE.get(file_id)
     if not record:
-        raise HTTPException(status_code=404, detail=_error_response("File not found"))
+        raise HTTPException(status_code=404, detail=_error_response("File not found", code=404))
     return record["metadata"]
 
 
@@ -506,7 +479,7 @@ async def list_assistants() -> Dict[str, Any]:
 async def get_assistant(assistant_id: str) -> Dict[str, Any]:
     data = ASSISTANT_STORE.get(assistant_id)
     if not data:
-        raise HTTPException(status_code=404, detail=_error_response("Assistant not found"))
+        raise HTTPException(status_code=404, detail=_error_response("Assistant not found", code=404))
     return _assistant_object(data)
 
 
@@ -537,6 +510,6 @@ async def list_fine_tune_jobs() -> Dict[str, Any]:
 async def get_fine_tune_job(job_id: str) -> Dict[str, Any]:
     job = FINE_TUNE_JOBS.get(job_id)
     if not job:
-        raise HTTPException(status_code=404, detail=_error_response("Job not found"))
+        raise HTTPException(status_code=404, detail=_error_response("Job not found", code=404))
     return job
 
