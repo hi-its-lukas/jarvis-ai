@@ -145,7 +145,10 @@ class Processor:
         tool_name = llm_response.get("tool_name") or ""
         arguments = llm_response.get("arguments") or {}
         if not tool_name:
-            raise RuntimeError("LLM response missing tool_name")
+            # Friendly fallback: This message will be shown to the user via OpenAICompatibleEngine
+            raise RuntimeError(
+                "Ich habe keine passende Smart Home Funktion dafür gefunden. Kann ich sonst noch etwas tun?"
+            )
 
         domain_name, service_name, payload = tool_registry.prepare_service_payload(
             tool_name,
