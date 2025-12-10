@@ -200,7 +200,7 @@ class OpenAICompatibleEngine:
 
     def _function_call(self, name: str, arguments: Dict[str, Any], model: str | None) -> Dict[str, Any]:
         return {
-            "id": f"cmpl-{uuid.uuid4()}",
+            "id": f"chatcmpl-{uuid.uuid4()}",
             "object": "chat.completion",
             "created": int(time.time()),
             "model": model or "jarvis",
@@ -209,7 +209,7 @@ class OpenAICompatibleEngine:
                     "index": 0,
                     "message": {
                         "role": "assistant",
-                        "content": None,
+                        "content": "",
                         "function_call": {
                             "name": name,
                             "arguments": json.dumps(arguments, ensure_ascii=False),
@@ -222,14 +222,14 @@ class OpenAICompatibleEngine:
 
     def _build_text_response(self, text: str, model: str | None = None) -> Dict[str, Any]:
         return {
-            "id": f"cmpl-{uuid.uuid4()}",
+            "id": f"chatcmpl-{uuid.uuid4()}",
             "object": "chat.completion",
             "created": int(time.time()),
             "model": model or "jarvis",
             "choices": [
                 {
                     "index": 0,
-                    "message": {"role": "assistant", "content": text},
+                    "message": {"role": "assistant", "content": str(text)},
                     "finish_reason": "stop",
                 }
             ],
