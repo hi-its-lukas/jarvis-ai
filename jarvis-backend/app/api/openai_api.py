@@ -11,7 +11,6 @@ import uuid
 from fastapi import APIRouter, File, HTTPException, Request, Response, UploadFile
 from pydantic import BaseModel, Field
 
-from app.services.entity_service import EntityService
 from app.services.function_registry import FUNCTION_DEFINITIONS
 from app.services.openai_engine import OpenAICompatibleEngine
 
@@ -131,14 +130,13 @@ class FineTuneRequest(BaseModel):
 def _get_engine(request: Request) -> OpenAICompatibleEngine:
     engine = getattr(request.app.state, "openai_engine", None)
     if engine is None:
-        discovery = getattr(request.app.state, "discovery", None)
-        ollama = getattr(request.app.state, "ollama", None)
-        entity_service = EntityService(discovery=discovery)
-        engine = OpenAICompatibleEngine(
-            discovery=discovery,
-            ollama=ollama,
-            entity_service=entity_service,
-        )
+        # Hole den zentralen Processor aus dem State (wird in main.py initialisiert)
+        processor = getattr(request.app.state, "processor", None)
+        if not processor:
+            raise RuntimeError("Global Processor not initialized")
+
+        # Inject Processor only - keine direkten Services mehr!
+        engine = OpenAICompatibleEngine(processor=processor)
         request.app.state.openai_engine = engine
     return engine
 
